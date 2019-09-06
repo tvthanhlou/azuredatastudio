@@ -594,10 +594,13 @@ declare module 'azdata' {
 	}
 
 	export enum MetadataType {
-		Table = 0,
-		View = 1,
-		SProc = 2,
-		Function = 3
+		Unknown = 0,
+		Table = 1,
+		View = 2,
+		SProc = 3,
+		Function = 4,
+		Schema = 5,
+		Database = 6
 	}
 
 	export interface ObjectMetadata {
