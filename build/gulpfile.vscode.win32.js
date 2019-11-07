@@ -54,8 +54,16 @@ function packageInnoSetup(iss, options, cb) {
 	];
 
 	cp.spawn(innoSetupPath, args, { stdio: ['ignore', 'inherit', 'inherit'] })
-		.on('error', cb)
-		.on('exit', () => cb(null));
+	.on('error', () => {
+		console.log("HELLOOOO");
+		throw "ERROR!";
+	})
+	.on('exit', (err) => {
+		console.log("HERE???");
+		cb(new Error("TESTING " + err));
+		// gulp.series(clean)();
+		// process.exit(1);
+	});
 }
 
 function buildWin32Setup(arch, target) {
@@ -76,6 +84,14 @@ function buildWin32Setup(arch, target) {
 		const productJson = JSON.parse(fs.readFileSync(originalProductJsonPath, 'utf8'));
 		productJson['target'] = target;
 		fs.writeFileSync(productJsonPath, JSON.stringify(productJson, undefined, '\t'));
+
+		// // {{SQL CARBON EDIT}} Modify installer file based on quality
+		if(product.quality !== 'stable') {
+			fs.writeFileSync(issPath,
+				fs.readFileSync(issPath).toString()
+					.replace(/inno-(small|big)-([\d]*)/g, 'inno-$1-$2-insiders')
+					.replace(/code.ico/g, 'code-insiders.ico'));
+		}
 
 		const definitions = {
 			NameLong: product.nameLong,
