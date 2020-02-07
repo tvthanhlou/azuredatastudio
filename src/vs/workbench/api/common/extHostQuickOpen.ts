@@ -261,7 +261,18 @@ class ExtHostQuickInput implements QuickInput {
 		this._onDidChangeValueEmitter
 	];
 
+	private _ok = false;
+
 	constructor(protected _proxy: MainThreadQuickOpenShape, protected _extensionId: ExtensionIdentifier, private _onDidDispose: () => void) {
+	}
+
+	get ok() {
+		return this._ok;
+	}
+
+	set ok(ok: boolean) {
+		this._ok = ok;
+		this.update({ ok });
 	}
 
 	get title() {

@@ -7940,6 +7940,8 @@ declare module 'vscode' {
 		 * An event signaling when the selected items have changed.
 		 */
 		readonly onDidChangeSelection: Event<T[]>;
+
+		ok: boolean;
 	}
 
 	/**
