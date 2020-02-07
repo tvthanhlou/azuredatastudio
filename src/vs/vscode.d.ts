@@ -7941,6 +7941,7 @@ declare module 'vscode' {
 		 */
 		readonly onDidChangeSelection: Event<T[]>;
 
+		// {SQL CARBON EDIT} Temporary change to allow setting the behavior of the QuickPick
 		ok: boolean;
 	}
 

@@ -107,8 +107,6 @@ export function registerAzureResourceCommands(appContext: AppContext, tree: Azur
 			};
 		}).sort((a, b) => a.label.localeCompare(b.label));
 
-		console.log(subscriptionQuickPickItems);
-
 		const selectedQuickPickItems = subscriptionQuickPickItems.filter(s => s.picked);
 
 		const quickPick = window.createQuickPick<AzureResourceSubscriptionQuickPickItem>();
@@ -120,6 +118,7 @@ export function registerAzureResourceCommands(appContext: AppContext, tree: Azur
 		quickPick.show();
 
 		quickPick.onDidAccept(async event => {
+			quickPick.hide();
 			const selectedSubscriptionQuickPickItems = quickPick.selectedItems;
 			if (selectedSubscriptionQuickPickItems && selectedSubscriptionQuickPickItems.length > 0) {
 				await tree.refresh(node, false);

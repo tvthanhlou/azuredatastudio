@@ -261,11 +261,12 @@ class ExtHostQuickInput implements QuickInput {
 		this._onDidChangeValueEmitter
 	];
 
-	private _ok = false;
 
 	constructor(protected _proxy: MainThreadQuickOpenShape, protected _extensionId: ExtensionIdentifier, private _onDidDispose: () => void) {
 	}
 
+	// {SQL CARBON EDIT} START Temporary change for ok button visibility
+	private _ok = false;
 	get ok() {
 		return this._ok;
 	}
@@ -274,6 +275,7 @@ class ExtHostQuickInput implements QuickInput {
 		this._ok = ok;
 		this.update({ ok });
 	}
+	// {SQL CARBON EDIT} END Temporary change for ok button visibility
 
 	get title() {
 		return this._title;
