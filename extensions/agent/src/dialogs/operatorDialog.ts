@@ -24,7 +24,10 @@ class PagerDutyTimeBox implements Updatable {
 		private readonly beginLabel: string,
 		private readonly endLabel: string,
 
-		private readonly workDayBeginObserver: (newValue: string) => void,
+		private readonly workdayBeginUpdater: (newValue: string) => void,
+		private readonly workdayEndUpdater: (newValue: string) => void,
+
+		private readonly workdayBeginObserver: (newValue: string) => void,
 		private readonly workdayEndObserver: (newValue: string) => void
 	) {
 		this.workdayBeginInputBox = this.view.modelBuilder.inputBox()
@@ -40,11 +43,31 @@ class PagerDutyTimeBox implements Updatable {
 				placeHolder: '06:00:00'
 			}).component();
 		this.workdayEndInputBox.enabled = false;
+
+		this.workdayBeginInputBox.onTextChanged(() => {
+			if (this.workdayBeginObserver) {
+				this.workdayBeginObserver(this.workdayBeginInputBox.value);
+			}
+		});
+
+		this.workdayEndInputBox.onTextChanged(() => {
+			if (this.workdayEndObserver) {
+				this.workdayEndObserver(this.workdayEndInputBox.value);
+			}
+		});
 	}
 
 	public update(): void {
-		this.workDayBeginObserver(this.workdayBeginInputBox.value);
-		this.workdayEndObserver(this.workdayEndInputBox.value);
+		this.workdayBeginUpdater(this.workdayBeginInputBox.value);
+		this.workdayEndUpdater(this.workdayEndInputBox.value);
+	}
+
+	public setBeginTime(value: string): void {
+		this.workdayBeginInputBox.value = value;
+	}
+
+	public setEndTime(value: string): void {
+		this.workdayEndInputBox.value = value;
 	}
 
 	public createContainer() {
@@ -79,6 +102,7 @@ class PagerDutyTimeBox implements Updatable {
 		this.workdayEndInputBox.enabled = false;
 	}
 }
+
 class PagerDutySchedule implements Updatable {
 	private readonly checkBox: azdata.CheckBoxComponent;
 
@@ -86,6 +110,7 @@ class PagerDutySchedule implements Updatable {
 		checkboxLabel: string,
 		private readonly timebox: PagerDutyTimeBox,
 		private readonly view: azdata.ModelView,
+		private readonly checkBoxObserver: (newValue: boolean) => void,
 
 	) {
 		this.checkBox = this.view.modelBuilder.checkBox()
@@ -100,12 +125,19 @@ class PagerDutySchedule implements Updatable {
 		this.timebox.update();
 	}
 
+	public setChecked(value: boolean): void {
+		this.checkBox.checked = value;
+		if (value === true) {
+			this.timebox.enable();
+		} else {
+			this.timebox.disable();
+		}
+	}
+
 	private attachListeners() {
 		this.checkBox.onChanged(() => {
-			if (this.checkBox.checked) {
-				this.timebox.enable();
-			} else {
-				this.timebox.disable();
+			if (this.checkBoxObserver) {
+				this.checkBoxObserver(this.checkBox.checked);
 			}
 		});
 
@@ -223,20 +255,29 @@ export class OperatorDialog extends AgentDialog<OperatorData> {
 				}).component();
 			this.enabledCheckBox.checked = this.model.enabled;
 
-			const weekdayTime = new PagerDutyTimeBox(view, OperatorDialog.WorkdayBeginLabel, OperatorDialog.WorkdayEndLabel,
-				((value) => {
-					this.model.weekdayPagerStartTime = value;
-				}), ((value) => {
-					this.model.weekdayPagerEndTime = value;
-				})
-			);
+			const weekdayTimes: PagerDutyTimeBox[] = [];
+
+			for (let i = 0; i < 5; i++) {
+				const newTime = new PagerDutyTimeBox(view, OperatorDialog.WorkdayBeginLabel, OperatorDialog.WorkdayEndLabel,
+					((value) => {
+						this.model.weekdayPagerStartTime = value;
+					}), ((value) => {
+						this.model.weekdayPagerEndTime = value;
+					}), ((value) => {
+						weekdayTimes.forEach(e => e.setBeginTime(value));
+					}), ((value) => {
+						weekdayTimes.forEach(e => e.setEndTime(value));
+					}));
+
+				weekdayTimes.push(newTime);
+			}
 
 			const saturdayTime = new PagerDutyTimeBox(view, OperatorDialog.WorkdayBeginLabel, OperatorDialog.WorkdayEndLabel,
 				((value) => {
 					this.model.saturdayPagerStartTime = value;
 				}), ((value) => {
 					this.model.saturdayPagerEndTime = value;
-				})
+				}), undefined, undefined
 			);
 
 			const sundayTime = new PagerDutyTimeBox(view, OperatorDialog.WorkdayBeginLabel, OperatorDialog.WorkdayEndLabel,
@@ -244,20 +285,29 @@ export class OperatorDialog extends AgentDialog<OperatorData> {
 					this.model.sundayPagerStartTime = value;
 				}), ((value) => {
 					this.model.sundayPagerEndTime = value;
-				})
+				}), undefined, undefined
 			);
 
 			this.pagerDutySchedules = nameOfDays.map((day, index) => {
 				let timebox: PagerDutyTimeBox;
 				if (index < 5) {
-					timebox = weekdayTime;
+					timebox = weekdayTimes[index];
 				} else if (index === 5) {
 					timebox = saturdayTime;
 				} else {
 					timebox = sundayTime;
 				}
 
-				return new PagerDutySchedule(day, timebox, view);
+				return new PagerDutySchedule(day, timebox, view, (value) => {
+					setImmediate(() => {
+						value === true ? timebox.enable() : timebox.disable();
+
+						if (index < 5) {
+							this.pagerDutySchedules.slice(0, 5).forEach(c => c.setChecked(value));
+						}
+					});
+				});
+
 			});
 
 			const pagerDutyScheduleComponents: azdata.FormComponent[] = this.pagerDutySchedules.map(c => {
