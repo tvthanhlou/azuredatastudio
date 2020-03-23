@@ -1348,7 +1348,9 @@ export enum CompletionItemKind {
 	Struct = 21,
 	Event = 22,
 	Operator = 23,
-	TypeParameter = 24
+	TypeParameter = 24,
+	User = 25,
+	Issue = 26
 }
 
 export enum CompletionItemTag {
@@ -2558,6 +2560,21 @@ export enum ColorThemeKind {
 }
 
 //#endregion Theming
+
+//#region Notebook
+
+export enum CellKind {
+	Markdown = 1,
+	Code = 2
+}
+
+export enum CellOutputKind {
+	Text = 1,
+	Error = 2,
+	Rich = 3
+}
+
+//#endregion
 
 //#region Timeline
 

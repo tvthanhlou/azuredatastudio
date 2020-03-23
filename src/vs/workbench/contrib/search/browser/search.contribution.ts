@@ -57,6 +57,7 @@ import { SearchEditor } from 'vs/workbench/contrib/searchEditor/browser/searchEd
 import { ViewPaneContainer } from 'vs/workbench/browser/parts/views/viewPaneContainer';
 import { IQuickAccessRegistry, Extensions as QuickAccessExtensions } from 'vs/platform/quickinput/common/quickAccess';
 import { SymbolsQuickAccessProvider } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
+import { AnythingQuickAccessProvider } from 'vs/workbench/contrib/search/browser/anythingQuickAccess';
 
 registerSingleton(ISearchWorkbenchService, SearchWorkbenchService, true);
 registerSingleton(ISearchHistoryService, SearchHistoryService, true);
@@ -654,8 +655,17 @@ Registry.as<IQuickOpenRegistry>(QuickOpenExtensions.Quickopen).registerQuickOpen
 );
 
 // Register Quick Access Handler
+const quickAccessRegistry = Registry.as<IQuickAccessRegistry>(QuickAccessExtensions.Quickaccess);
 
-Registry.as<IQuickAccessRegistry>(QuickAccessExtensions.Quickaccess).registerQuickAccessProvider({
+quickAccessRegistry.registerQuickAccessProvider({
+	ctor: AnythingQuickAccessProvider,
+	prefix: AnythingQuickAccessProvider.PREFIX,
+	placeholder: nls.localize('anythingQuickAccessPlaceholder', "Type '?' to get help on the actions you can take from here"),
+	contextKey: 'inFilesPicker',
+	helpEntries: [{ description: nls.localize('anythingQuickAccess', "Go to File"), needsEditor: false }]
+});
+
+quickAccessRegistry.registerQuickAccessProvider({
 	ctor: SymbolsQuickAccessProvider,
 	prefix: SymbolsQuickAccessProvider.PREFIX,
 	placeholder: nls.localize('symbolsQuickAccessPlaceholder', "Type the name of a symbol to open."),
@@ -724,6 +734,17 @@ configurationRegistry.registerConfiguration({
 			description: nls.localize('search.quickOpen.includeSymbols', "Whether to include results from a global symbol search in the file results for Quick Open."),
 			default: false
 		},
+		'search.quickOpen.workspaceSymbolsFilter': {
+			type: 'string',
+			enum: ['default', 'reduced', 'all'],
+			markdownEnumDescriptions: [
+				nls.localize('search.quickOpen.workspaceSymbolsFilter.default', "All symbols including local variables are included in the specific workspace symbols picker but excluded from the files picker when `#search.quickOpen.includeSymbols#` is enabled."),
+				nls.localize('search.quickOpen.workspaceSymbolsFilter.reduced', "Some symbols like local variables are excluded in all pickers."),
+				nls.localize('search.quickOpen.workspaceSymbolsFilter.all', "All symbols including local variables are included in all pickers.")
+			],
+			default: 'default',
+			description: nls.localize('search.quickOpen.workspaceSymbolsFilter', "Controls the filter to apply for the workspace symbols search in quick open. Depending on the setting, some symbols like local variables will be excluded to reduce the total number of results."),
+		},
 		'search.quickOpen.includeHistory': {
 			type: 'boolean',
 			description: nls.localize('search.quickOpen.includeHistory', "Whether to include results from recently opened files in the file results for Quick Open."),
@@ -756,7 +777,7 @@ configurationRegistry.registerConfiguration({
 			type: 'string',
 			enum: ['auto', 'alwaysCollapse', 'alwaysExpand'],
 			enumDescriptions: [
-				'Files with less than 10 results are expanded. Others are collapsed.',
+				nls.localize('search.collapseResults.auto', "Files with less than 10 results are expanded. Others are collapsed."),
 				'',
 				''
 			],

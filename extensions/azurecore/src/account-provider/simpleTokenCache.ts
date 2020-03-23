@@ -51,6 +51,9 @@ async function getFileKeytar(filePath: string, credentialService: azdata.Credent
 		const decipherIv = crypto.createDecipheriv('aes-256-gcm', keyBuffer, ivBuffer);
 
 		const split = content.split('%');
+		if (split.length !== 2) {
+			throw new Error('File didn\'t contain the auth tag.');
+		}
 		decipherIv.setAuthTag(Buffer.from(split[1], 'hex'));
 
 		return `${decipherIv.update(split[0], 'hex', 'utf8')}${decipherIv.final('utf8')}`;
@@ -119,7 +122,7 @@ export class SimpleTokenCache {
 			// Override how findCredentials works
 			keytar.getPasswords = async (service: string): Promise<MultipleAccountsResponse> => {
 				const [serviceName, accountPrefix] = service.split(separator);
-				if (!serviceName || !accountPrefix) {
+				if (serviceName === undefined || accountPrefix === undefined) {
 					throw new Error('Service did not have seperator: ' + service);
 				}
 

@@ -83,9 +83,9 @@ export class AzureAuthCodeGrant extends AzureAuth {
 			loginUrl = `${this.loginEndpointUrl}${this.commonTenant}/oauth2/authorize?${qs.stringify(loginQuery)}`;
 		}
 
-		const authenticatedCode = await this.addServerListeners(this.server, nonce, loginUrl, authCompletePromise);
-
 		await vscode.env.openExternal(vscode.Uri.parse(`http://localhost:${serverPort}/signin?nonce=${encodeURIComponent(nonce)}`));
+
+		const authenticatedCode = await this.addServerListeners(this.server, nonce, loginUrl, authCompletePromise);
 
 		let tokenClaims: TokenClaims;
 		let accessToken: AccessToken;

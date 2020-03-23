@@ -114,6 +114,7 @@ export class MenuId {
 	static readonly CommentThreadActions = new MenuId('CommentThreadActions');
 	static readonly CommentTitle = new MenuId('CommentTitle');
 	static readonly CommentActions = new MenuId('CommentActions');
+	static readonly NotebookCellTitle = new MenuId('NotebookCellTitle');
 	static readonly BulkEditTitle = new MenuId('BulkEditTitle');
 	static readonly BulkEditContext = new MenuId('BulkEditContext');
 	static readonly ObjectExplorerItemContext = new MenuId('ObjectExplorerItemContext'); // {{SQL CARBON EDIT}}
@@ -442,14 +443,14 @@ export function registerAction2(ctor: { new(): Action2 }): IDisposable {
 			KeybindingsRegistry.registerKeybindingRule({
 				...item,
 				id: command.id,
-				when: ContextKeyExpr.and(command.precondition, item.when)
+				when: command.precondition ? ContextKeyExpr.and(command.precondition, item.when) : item.when
 			});
 		}
 	} else if (keybinding) {
 		KeybindingsRegistry.registerKeybindingRule({
 			...keybinding,
 			id: command.id,
-			when: ContextKeyExpr.and(command.precondition, keybinding.when)
+			when: command.precondition ? ContextKeyExpr.and(command.precondition, keybinding.when) : keybinding.when
 		});
 	}
 
