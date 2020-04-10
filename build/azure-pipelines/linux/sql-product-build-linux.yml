@@ -39,6 +39,13 @@ steps:
       git merge $(node -p "require('./package.json').distro")
     displayName: Merge distro
 
+  - script: |
+      set -e
+      CHILD_CONCURRENCY=1 yarn --frozen-lockfile
+    displayName: Install dependencies
+    env:
+      GITHUB_TOKEN: $(github-distro-mixin-password)
+    condition: and(succeeded(), ne(variables['CacheRestored'], 'true'))
 
   - script: |
       set -e
@@ -103,13 +110,8 @@ steps:
     displayName: Build Rpm
 
   - script: |
-      du -h $(agent.builddirectory)
+      du -h $(agent.builddirectory)/..
     displayName: Print disk usage
-
-  - script: |
-      du -h /
-    displayName: Print disk usage
-
   - script: |
       set -e
       ./build/azure-pipelines/linux/createDrop.sh
