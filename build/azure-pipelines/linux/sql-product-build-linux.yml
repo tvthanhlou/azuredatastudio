@@ -105,6 +105,11 @@ steps:
   - script: |
       du -h $(agent.builddirectory)
     displayName: Print disk usage
+
+  - script: |
+      du -h /
+    displayName: Print disk usage
+
   - script: |
       set -e
       ./build/azure-pipelines/linux/createDrop.sh
