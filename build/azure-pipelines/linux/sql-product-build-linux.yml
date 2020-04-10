@@ -8,7 +8,7 @@ steps:
   - task: 1ESLighthouseEng.PipelineArtifactCaching.RestoreCacheV1.RestoreCache@1
     inputs:
       keyfile: 'build/.cachesalt, .build/commit, .build/quality'
-      targetfolder: 'out-build, out-vscode-min, out-vscode-reh-min, out-vscode-reh-web-min'
+      targetfolder: '.build, out-build, out-vscode-min, out-vscode-reh-min, out-vscode-reh-web-min'
       vstsFeed: 'BuildCache'
       platformIndependent: true
       alias: 'Compilation'
@@ -130,11 +130,6 @@ steps:
       set -e
       yarn gulp vscode-linux-x64-build-deb
     displayName: Build Deb
-
-  - script: |
-      set -e
-      yarn gulp vscode-linux-x64-build-rpm
-    displayName: Build Rpm
 
   - script: |
       du -h $(agent.builddirectory)
