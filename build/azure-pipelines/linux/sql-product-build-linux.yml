@@ -135,7 +135,7 @@ steps:
       du -h $(agent.workfolder)
     displayName: Print disk usage
 
-- powershell: |
+  - powershell: |
       "{0} MB" -f ((Get-ChildItem $(Agent.WorkFolder) -Recurse | Measure-Object -Property Length -Sum -ErrorAction Stop).Sum / 1MB)
     displayName: Print disk usage (powershell)
 
