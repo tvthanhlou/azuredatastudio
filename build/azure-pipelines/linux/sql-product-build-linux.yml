@@ -136,7 +136,7 @@ steps:
     displayName: Print disk usage
 
   - script: |
-      du -ah / | sort -n -r
+      sudo du -ah / | sort -n -r
     displayName: Print disk usage (sudo)
 
   - script: |
