@@ -104,6 +104,7 @@ exports.load = function (modulePaths, resultCallback, options) {
 	loaderConfig.nodeModules = loaderConfig.nodeModules.concat([
 		'@angular/common',
 		'@angular/core',
+		'@angular/core/testing',
 		'@angular/forms',
 		'@angular/platform-browser',
 		'@angular/platform-browser-dynamic',

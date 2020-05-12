@@ -44,6 +44,7 @@ function initLoader(opts) {
 		nodeModules: [ // {{SQL CARBON EDIT}}
 			'@angular/common',
 			'@angular/core',
+			'@angular/core/testing',
 			'@angular/forms',
 			'@angular/platform-browser',
 			'@angular/platform-browser-dynamic',
