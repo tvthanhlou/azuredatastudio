@@ -146,4 +146,30 @@ describe('ProjectsController: import operations', function (): void {
 		const projController = new ProjectsController(testContext.apiWrapper.object, new SqlDatabaseProjectTreeViewProvider());
 		await testUtils.shouldThrowSpecificError(async () => await projController.importNewDatabaseProject(mockConnectionProfile), constants.projectLocationRequired);
 	});
+
+	it('Should show error when provided location is non empty', async function (): Promise<void> {
+		const testFolderPath = await testUtils.createDummyFileStructure();
+		//const projFileDir = path.join(os.tmpdir(), `TestProject_${new Date().getTime()}`);
+		//console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>',projFileDir);
+
+		testContext.apiWrapper.setup(x => x.showInputBox(TypeMoq.It.isAny(), TypeMoq.It.isAny())).returns(() => Promise.resolve('MyProjectName'));
+		testContext.apiWrapper.setup(x => x.showQuickPick(TypeMoq.It.isAny(), TypeMoq.It.isAny() ,TypeMoq.It.isAny())).returns(() => Promise.resolve({label: 'SchemaObjectType'}));
+		testContext.apiWrapper.setup(x => x.showOpenDialog(TypeMoq.It.isAny())).returns(() => Promise.resolve([vscode.Uri.file(testFolderPath)]));
+		testContext.apiWrapper.setup(x => x.workspaceFolders()).returns(() => undefined);
+		testContext.apiWrapper.setup(x => x.showErrorMessage(TypeMoq.It.isAny())).returns((s) => { console.log(s);throw new Error(s); });
+		/*testContext.apiWrapper.setup(x => x.showErrorMessage(TypeMoq.It.isAny())).returns((s) => {
+			console.log(s);
+			return Promise.resolve(s);
+		});*/
+
+		const projController = new ProjectsController(testContext.apiWrapper.object, new SqlDatabaseProjectTreeViewProvider());
+		try{
+			//console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>calling importNewDatabase');
+			await projController.importNewDatabaseProject(mockConnectionProfile);
+		} catch(err){
+			//console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>',err);
+			should(err.message).equal(constants.projectLocationNotEmpty);
+		}
+		//await testUtils.shouldThrowSpecificError(async () => await projController.importNewDatabaseProject(mockConnectionProfile), constants.projectLocationRequired);//projectLocationNotEmpty);
+	});
 });
