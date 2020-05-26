@@ -399,14 +399,5 @@ declare module 'azdata' {
 	export interface TaskInfo {
 		targetLocation?: string;
 	}
-
-	export enum ExtractTarget {
-		dacPac = 0,
-		file = 1,
-		flat = 2,
-		objectType = 3,
-		schema = 4,
-		schemaObjectType = 5
-	}
 }
 

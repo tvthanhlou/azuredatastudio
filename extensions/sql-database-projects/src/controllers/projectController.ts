@@ -11,8 +11,8 @@ import * as UUID from 'vscode-languageclient/lib/utils/uuid';
 import * as templates from '../templates/templates';
 import * as mssql from '../../../mssql';
 
-import { Uri, QuickPickItem, WorkspaceFolder, extensions } from 'vscode';
-import { IConnectionProfile, ExtractTarget, TaskExecutionMode } from 'azdata';
+import { Uri, QuickPickItem, WorkspaceFolder } from 'vscode';
+import { IConnectionProfile, TaskExecutionMode } from 'azdata';
 import { ApiWrapper } from '../common/apiWrapper';
 import { Project } from '../models/project';
 import { SqlDatabaseProjectTreeViewProvider } from './databaseProjectTreeViewProvider';
@@ -24,6 +24,16 @@ import { ImportDataModel } from '../models/api/import';
 import { DeployDatabaseDialog } from '../dialogs/deployDatabaseDialog';
 import { NetCoreTool, DotNetCommandOptions } from '../tools/netcoreTool';
 import { BuildHelper } from '../tools/buildHelper';
+
+// TODO: use string enums
+export enum ExtractTarget {
+	dacpac = 0,
+	file = 1,
+	flat = 2,
+	objectType = 3,
+	schema = 4,
+	schemaObjectType = 5
+}
 
 /**
  * Controller for managing project lifecycle
@@ -139,6 +149,27 @@ export class ProjectsController {
 		const project = this.getProjectContextFromTreeNode(treeNode);
 		const deployDatabaseDialog = new DeployDatabaseDialog(this.apiWrapper, project);
 		deployDatabaseDialog.openDialog();
+	}
+
+	public async schemaCompare(treeNode: BaseProjectTreeItem): Promise<void> {
+		// check if schema compare extension is installed
+		if (this.apiWrapper.getExtension(constants.schemaCompareExtensionId)) {
+			// build project
+			await this.buildProject(treeNode);
+
+			// start schema compare with the dacpac produced from build
+			const project = this.getProjectContextFromTreeNode(treeNode);
+			const dacpacPath = path.join(project.projectFolderPath, 'bin', 'Debug', `${project.projectFileName}.dacpac`);
+
+			// check that dacpac exists
+			if (await utils.exists(dacpacPath)) {
+				this.apiWrapper.executeCommand('schemaCompare.start', dacpacPath);
+			} else {
+				this.apiWrapper.showErrorMessage(constants.buildDacpacNotFound);
+			}
+		} else {
+			this.apiWrapper.showErrorMessage(constants.schemaCompareNotInstalled);
+		}
 	}
 
 	public async import(treeNode: BaseProjectTreeItem) {
@@ -258,6 +289,7 @@ export class ProjectsController {
 	public async importNewDatabaseProject(context: any): Promise<void> {
 		let model = <ImportDataModel>{};
 
+		// TODO: Refactor code
 		try {
 			let profile = context ? <IConnectionProfile>context.connectionProfile : undefined;
 			//TODO: Prompt for new connection addition and get database information if context information isn't provided.
@@ -274,10 +306,7 @@ export class ProjectsController {
 			model.projName = newProjName;
 
 			// Get extractTarget
-			let extractTarget: ExtractTarget = await this.getExtractTarget();
-			if (!extractTarget || extractTarget === -1) {
-				throw new Error(constants.extractTargetRequired);
-			}
+			let extractTarget: mssql.ExtractTarget = await this.getExtractTarget();
 			model.extractTarget = extractTarget;
 
 			// Get folder location for project creation
@@ -288,14 +317,14 @@ export class ProjectsController {
 
 			// Set project folder/file location
 			let newProjFolderUri;
-			if (extractTarget !== ExtractTarget.file) {
-				newProjFolderUri = newProjUri;
-			} else {
+			if (extractTarget === mssql.ExtractTarget['file']) {
 				// Get folder info, if extractTarget = File
 				newProjFolderUri = Uri.file(path.dirname(newProjUri.fsPath));
+			} else {
+				newProjFolderUri = newProjUri;
 			}
 
-			//Check folder is empty
+			// Check folder is empty
 			let isEmpty: boolean = await this.isDirEmpty(newProjFolderUri.fsPath);
 			if (!isEmpty) {
 				throw new Error(constants.projectLocationNotEmpty);
@@ -339,39 +368,52 @@ export class ProjectsController {
 		return projName;
 	}
 
-	private async getExtractTarget(): Promise<ExtractTarget> {
-		let extractTarget: ExtractTarget;
+	private mapExtractTargetEnum(inputTarget: any): mssql.ExtractTarget {
+		if (inputTarget) {
+			switch (inputTarget) {
+				case 'File': return mssql.ExtractTarget['file'];
+				case 'Flat': return mssql.ExtractTarget['flat'];
+				case 'ObjectType': return mssql.ExtractTarget['objectType'];
+				case 'Schema': return mssql.ExtractTarget['schema'];
+				case 'SchemaObjectType': return mssql.ExtractTarget['schemaObjectType'];
+				default: throw new Error(`Invalid input: ${inputTarget}`);
+			}
+		} else {
+			throw new Error(constants.extractTargetRequired);
+		}
+	}
 
-		const extractTargetOptions: QuickPickItem[] = [];
+	private async getExtractTarget(): Promise<mssql.ExtractTarget> {
+		let extractTarget: mssql.ExtractTarget;
+
+		let extractTargetOptions: QuickPickItem[] = [];
 
 		let keys: string[] = Object.keys(ExtractTarget).filter(k => typeof ExtractTarget[k as any] === 'number');
 
-		keys.forEach(targetOption => {
-			let pascalCaseTargetOption: string = utils.toPascalCase(targetOption);	// for better readability
-			extractTargetOptions.push({ label: pascalCaseTargetOption });
+		// TODO: Create a wrapper class to handle the mapping
+		keys.forEach((targetOption: string) => {
+			if (targetOption !== 'dacpac') {		//Do not present the option to create Dacpac
+				let pascalCaseTargetOption: string = utils.toPascalCase(targetOption);	// for better readability
+				extractTargetOptions.push({ label: pascalCaseTargetOption });
+			}
 		});
 
-		let input = await this.apiWrapper.showQuickPick(extractTargetOptions.slice(1), {		//Ignore the first option to create Dacpac
+		let input = await this.apiWrapper.showQuickPick(extractTargetOptions, {
 			canPickMany: false,
 			placeHolder: constants.extractTargetInput
 		});
 		let extractTargetInput = input?.label;
 
-		if (extractTargetInput) {
-			let camelCaseInput: string = utils.toCamelCase(extractTargetInput);
-			extractTarget = ExtractTarget[camelCaseInput as keyof typeof ExtractTarget];
-		} else {
-			extractTarget = -1;
-		}
+		extractTarget = this.mapExtractTargetEnum(extractTargetInput);
 
 		return extractTarget;
 	}
 
-	private async getFolderLocation(extractTarget: ExtractTarget): Promise<Uri | undefined> {
+	private async getFolderLocation(extractTarget: mssql.ExtractTarget): Promise<Uri | undefined> {
 		let selectionResult;
 		let projUri;
 
-		if (extractTarget !== ExtractTarget.file) {
+		if (extractTarget !== mssql.ExtractTarget.file) {
 			selectionResult = await this.apiWrapper.showOpenDialog({
 				canSelectFiles: false,
 				canSelectFolders: true,
@@ -407,14 +449,9 @@ export class ProjectsController {
 	}
 
 	private async importApiCall(model: ImportDataModel): Promise<void> {
-		let ext = extensions.getExtension(mssql.extension.name);
+		let ext = this.apiWrapper.getExtension(mssql.extension.name)!;
 
-		if (ext === undefined) {
-			this.apiWrapper.showErrorMessage('VSCode extension undefined');
-			return;
-		}
-
-		const service = (ext.exports as mssql.IExtension).dacFx;
+		const service = (await ext.activate() as mssql.IExtension).dacFx;
 		const ownerUri = await this.apiWrapper.getUriForConnection(model.serverId);
 
 		await service.importDatabaseProject(model.database, model.filePath, model.projName, model.version, ownerUri, model.extractTarget, TaskExecutionMode.execute);

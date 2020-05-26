@@ -4,8 +4,9 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
-import { promises as fs } from 'fs';
 import * as os from 'os';
+import { promises as fs } from 'fs';
+
 /**
  * Consolidates on the error message string
  */
@@ -67,13 +68,6 @@ export async function exists(path: string): Promise<boolean> {
  */
 export function toPascalCase(input: string): string {
 	return input.charAt(0).toUpperCase() + input.substr(1);
-}
-
-/**
- * Convert PascalCase input to camelCase
- */
-export function toCamelCase(input: string): string {
-	return input.charAt(0).toLowerCase() + input.substr(1);
 }
 
 /**
