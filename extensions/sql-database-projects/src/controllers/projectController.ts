@@ -489,6 +489,7 @@ export class ProjectsController {
 				openLabel: constants.selectFileFolder,
 				defaultUri: this.apiWrapper.workspaceFolders() ? (this.apiWrapper.workspaceFolders() as WorkspaceFolder[])[0].uri : undefined
 			});
+
 			if (selectionResult) {
 				projUri = (selectionResult as Uri[])[0];
 			}
@@ -534,7 +535,8 @@ export class ProjectsController {
 		if (!await utils.exists(absolutePath)) {
 			if (await utils.exists(absolutePath + constants.sqlFileExtension)) {
 				absolutePath += constants.sqlFileExtension;
-			} else {
+			}
+			else {
 				await this.apiWrapper.showErrorMessage(constants.cannotResolvePath(absolutePath));
 				return fileFolderList;
 			}
