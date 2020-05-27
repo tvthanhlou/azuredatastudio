@@ -68,7 +68,7 @@ describe('Project: sqlproj content operations', function (): void {
 		should(project.files.filter(f => f.type === EntryType.Folder).length).equal(3); // 2folders + dummy default Properties folder
 	});
 
-	it('Should throw error while adding Folder and Build entries to sqlproj when a file/folder doesnot exist on disk', async function (): Promise<void> {
+	it('Should throw error while adding Folder and Build entries to sqlproj when a file/folder does not exist on disk', async function (): Promise<void> {
 		projFilePath = await testUtils.createTestSqlProj(baselines.newProjectFileBaseline);
 		const project = new Project(projFilePath);
 		await project.readProjFile();
